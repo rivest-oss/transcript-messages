@@ -18,7 +18,7 @@
 
 ## Installation
 
-**Discord.js v13 and is needed.**
+**Discord.js v13 or above is needed.**
 
 ```sh-session
 npm install transcript-messages
