@@ -1,6 +1,6 @@
 {
   "name": "transcript-messages",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Transcript Discord Channels messages by the easy way.",
   "main": "index.js",
   "scripts": {
@@ -16,13 +16,12 @@
     "discord"
   ],
   "author": "rivest-oss",
-  "license": "Apache-2.0",
+  "license": "CC-BY-SA-4.0",
   "bugs": {
     "url": "https://github.com/rivest-oss/transcript-messages/issues"
   },
   "homepage": "https://github.com/rivest-oss/transcript-messages#readme",
   "dependencies": {
-    "bfj": "^7.0.2",
     "discord.js": "^13"
   }
 }

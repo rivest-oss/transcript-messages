@@ -33,10 +33,8 @@ It's easy to use:
 `index.js`
 
 ```js
+require(`transcript-messages`)(require); // Must be started before `Discord.js`.
 const Discord = require(`discord.js`);
-const TextChannel = require(`transcript-messages`);
-
-Discord.TextChannel.prototype = TextChannel; // Replace Discord's TextChannel with the package's one
 
 const client = new Discord.Client(...);
 // ...
