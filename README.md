@@ -18,7 +18,7 @@
 
 ## Installation
 
-**Discord.js both, v12 or v13, can be used.**
+**Discord.js v13 or above is needed.**
 
 ```sh-session
 npm install transcript-messages
@@ -29,8 +29,35 @@ pnpm add transcript-messages
 ## How to use
 
 It's easy to use:
-	When you're requiring `discord.js`, write code:
+
+`index.js`
+
 ```js
 const Discord = require(`discord.js`);
-require(`transcript-messages`); // Require transcript-messages module
+const TextChannel = require(`transcript-messages`);
+
+Discord.TextChannel.prototype = TextChannel; // Replace Discord's TextChannel with the package's one
+
+const client = new Discord.Client(...);
+// ...
+
+client.transcripts = new Discord.Collection(); // Make a temporary collection to save transcripts, you probably would want to use a DB instead
+```
+
+`transcript.js`
+
+```js
+const json = await interaction.channel.transcript(); // Remember, it's an async function!
+interaction.client.transcripts.set(interaction.guild.id, json);
+```
+
+`loadTranscript.js`
+
+```js
+const webhook = interaction.channel.createWebhook(...);
+
+await interaction.channel.importTranscript(
+  interaction.client.transcripts.get(interaction.guild.id),
+  webhook // ...or you can leave this alone and it will generate it but it will not handle errors
+);
 ```

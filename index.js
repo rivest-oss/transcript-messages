@@ -1,90 +1,52 @@
-const { TextChannel, Structures } = require(`discord.js`);
-var bfj = require(`bfj`);
+const { TextChannel, WebhookClient } = require(`discord.js`);
+const bfj = require(`bfj`);
 
-class TranscriptMessages extends Structures.get(`TextChannel`) {
-	transcript(callback) {
-		var thi = this;
-		if(!callback || typeof callback !== `function`) {
-			return new Promise(async(resolve, reject) => {
-				return doCode(this, resolve, reject);
-			});
-		} else {
-			return doCode(this, callback);
-		}
+class TranscriptMessages extends TextChannel {
+	constructor(options) {
+		super(options)
+	}
 
-		async function doCode(this1, resolve, reject) {
-			this1.messages.fetch({
+	/**
+	 * Makes a transcript.
+	 * @returns string A JSON string with all the messages
+	 * @async
+	 */
+	async transcript() {
+		try {
+			const messagesArray = await this.messages.fetch({
 				limit: 100,
-			}).then(async messagesArray => {
-				bfj.stringify(messagesArray).then(async json => {
-					if(reject) {
-						return resolve(json);
-					} else {
-						return resolve(null, json);
-					}
-				}).catch(async err => {
-					if(reject) {
-						return reject(err);
-					} else {
-						return resolve(err, null);
-					}
-				});
-			}).catch(async err => {
-				if(reject) {
-					return reject(err);
-				} else {
-					return resolve(err, null);
-				}
-			});
+			})
+			const json = await bfj.stringify(messagesArray)
+			return json;
+		} catch (e) {
+			console.log(`[TranscriptMessages] Error while transcripting ${e}`)
 		}
 	}
 
-	importTranscript(transcript, webhookClient, callback) {
-		var thi = this;
+	/**
+	 * Imports a transcript into a channel (recreates all conversation).
+	 * @param {string} transcript The JSON string returned by transcript()
+	 * @param {WebhookClient?} webhookClient A webhook client of the channel
+	 * @async
+	 */
+	async importTranscript(transcript, webhookClient) {
+		let client = webhookClient
+		const decode = JSON.parse(transcript);
+		let usersCache = {};
 
-		if(!callback || typeof callback !== `function`) {
-			return new Promise(async(resolve, reject) => {
-				if(!webhookClient) {
-					this.createWebhook(`TranscriptWebhook`, {
-						reason: `Importing transcript.`,
-					}).then(async webhookClient => {
-						return doCode(this, transcript, webhookClient, resolve, reject);
-					}).catch(async err => {
-						return reject(err);
-					});
-				} else {
-					return doCode(this, transcript, webhookClient, resolve, reject);
-				}
-			});
-		} else {
-			if(!webhookClient) {
-				this.createWebhook(`TranscriptWebhook`, {
-					reason: `Importing transcript.`,
-				}).then(async webhookClient => {
-					return doCode(this, transcript, webhookClient, callback);
-				}).catch(async err => {
-					return callback(err, null);
-				});
-			} else {
-				return doCode(this, transcript, webhookClient, callback);
-			}
-		}
+		if (!webhookClient)
+			client = this.createWebhook({ name: "TranscriptWebhook", reason: "Transcript messages." })
 
-		async function doCode(this1, transcript, webhookClient, resolve, reject) {
-			var decode = JSON.parse(transcript);
+		for (var msg of decode) {
+			if (!usersCache[msg.authorID]) usersCache[msg.authorID] = await this.client.users.fetch(msg.authorID).catch(reject || callback);
 
-			var lastID, usersCache = {}, data = {};
-			for(var msg of decode) {
-				if(!usersCache[msg.authorID]) usersCache[msg.authorID] = await this1.client.users.fetch(msg.authorID).catch(reject || callback);
-
-				await webhookClient.send(msg.content || `Empty.`, {
-					username: usersCache[msg.authorID].username || `Non-registered`,
-					avatarURL: usersCache[msg.authorID].avatar ? `https://cdn.discordapp.com/avatars/${msg.authorID}/${usersCache[msg.authorID].avatar}.webp` : `https://cdn.discordapp.com/embed/avatars/${(usersCache[msg.authorID].discriminator || 5) % 5}.png`,
-					attachments: msg.attachments || [],
-				}).catch(reject || callback);
-			}
+			await client.send(msg.content || `Empty.`, {
+				username: usersCache[msg.authorID].username || `Non-registered`,
+				avatarURL: usersCache[msg.authorID].avatar ? `https://cdn.discordapp.com/avatars/${msg.authorID}/${usersCache[msg.authorID].avatar}.webp` : `https://cdn.discordapp.com/embed/avatars/${(usersCache[msg.authorID].discriminator || 5) % 5}.png`,
+				attachments: msg.attachments || [],
+			}).catch((e) => console.log(`[TranscriptMessages] Error ocurred while trying to import messages: ${e}`));
 		}
 	}
 }
 
-Structures.extend(`TextChannel`, () => TranscriptMessages)
+module.exports = TranscriptMessages
